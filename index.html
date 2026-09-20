@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI QUEST ～生成AIの世界を冒険しよう～</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="logo">🐾 AI QUEST</div>
+    <div class="stats">
+      <span>Lv.<b id="level">1</b></span>
+      <span>EXP <b id="exp">0</b></span>
+      <span>🪙 <b id="coins">0</b></span>
+    </div>
+  </header>
+
+  <main>
+    <section id="title" class="screen active">
+      <div class="hero-card">
+        <div class="cat">🐱</div>
+        <p class="eyebrow">生成AIを遊びながら学ぶ冒険RPG</p>
+        <h1>AI QUEST</h1>
+        <p>～生成AIの世界を冒険しよう～</p>
+        <button class="primary" onclick="startGame()">冒険をはじめる</button>
+        <button class="secondary" onclick="loadGame()">続きから</button>
+        <p class="save-note">進行状況はこのブラウザに自動保存されます。</p>
+      </div>
+    </section>
+
+    <section id="profile" class="screen">
+      <div class="panel narrow">
+        <h2>冒険者プロフィール</h2>
+        <label>名前
+          <input id="playerName" maxlength="12" placeholder="ゆう">
+        </label>
+        <button class="primary" onclick="createProfile()">この名前で冒険する</button>
+      </div>
+    </section>
+
+    <section id="opening" class="screen">
+      <div class="panel">
+        <div id="dialogue"></div>
+        <div class="dialogue-actions">
+          <button class="primary" onclick="nextOpening()">次へ</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="map" class="screen">
+      <div class="section-head">
+        <div><p class="eyebrow">WORLD MAP</p><h2>AIの世界</h2></div>
+        <button class="secondary" onclick="showScreen('title')">タイトルへ</button>
+      </div>
+      <div class="map-grid">
+        <button class="world unlocked" onclick="openVillage()"><span>🏡</span><b>はじまりの村</b><small>LEVEL 1～2</small></button>
+        <button class="world locked"><span>🌲</span><b>プロンプトの森</b><small>LEVEL 3</small></button>
+        <button class="world locked"><span>🏙️</span><b>文章生成の街</b><small>LEVEL 5</small></button>
+        <button class="world locked"><span>🎨</span><b>画像生成の街</b><small>LEVEL 6</small></button>
+        <button class="world locked"><span>🧪</span><b>AI研究所</b><small>LEVEL 9</small></button>
+        <button class="world locked"><span>💼</span><b>AI仕事ギルド</b><small>LEVEL 7</small></button>
+        <button class="world locked"><span>🛡️</span><b>安全・検証エリア</b><small>LEVEL 8</small></button>
+        <button class="world locked"><span>👑</span><b>AIマスター試験</b><small>LEVEL 9</small></button>
+      </div>
+    </section>
+
+    <section id="village" class="screen">
+      <div class="section-head">
+        <div><p class="eyebrow">はじまりの村</p><h2>クエストボード</h2></div>
+        <button class="secondary" onclick="showScreen('map')">マップへ</button>
+      </div>
+      <div id="questList" class="quest-list"></div>
+    </section>
+
+    <section id="quest" class="screen">
+      <div class="panel">
+        <div id="questHeader"></div>
+        <div id="questContent"></div>
+      </div>
+    </section>
+
+    <section id="result" class="screen">
+      <div class="panel result-panel">
+        <div class="result-icon">✨</div>
+        <h2 id="resultTitle">クエストクリア！</h2>
+        <p id="resultMessage"></p>
+        <div class="reward" id="reward"></div>
+        <button class="primary" onclick="continueAfterResult()">次へ進む</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
