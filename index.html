@@ -54,16 +54,8 @@
         <div><p class="eyebrow">WORLD MAP</p><h2>AIの世界</h2></div>
         <button class="secondary" onclick="showScreen('title')">タイトルへ</button>
       </div>
-      <div class="map-grid">
-        <button class="world unlocked" onclick="openVillage()"><span>🏡</span><b>はじまりの村</b><small>LEVEL 1～2</small></button>
-        <button class="world locked"><span>🌲</span><b>プロンプトの森</b><small>LEVEL 3</small></button>
-        <button class="world locked"><span>🏙️</span><b>文章生成の街</b><small>LEVEL 5</small></button>
-        <button class="world locked"><span>🎨</span><b>画像生成の街</b><small>LEVEL 6</small></button>
-        <button class="world locked"><span>🧪</span><b>AI研究所</b><small>LEVEL 9</small></button>
-        <button class="world locked"><span>💼</span><b>AI仕事ギルド</b><small>LEVEL 7</small></button>
-        <button class="world locked"><span>🛡️</span><b>安全・検証エリア</b><small>LEVEL 8</small></button>
-        <button class="world locked"><span>👑</span><b>AIマスター試験</b><small>LEVEL 9</small></button>
-      </div>
+      <div id="worldGrid" class="map-grid"></div>
+      <p id="mapMessage" class="save-note">レベルに応じて新しいエリアが自動解放されます。</p>
     </section>
 
     <section id="village" class="screen">
@@ -72,6 +64,15 @@
         <button class="secondary" onclick="showScreen('map')">マップへ</button>
       </div>
       <div id="questList" class="quest-list"></div>
+    </section>
+
+
+    <section id="promptForest" class="screen">
+      <div class="section-head">
+        <div><p class="eyebrow">AREA 03</p><h2>プロンプトの森</h2></div>
+        <button class="secondary" onclick="showScreen('map')">マップへ</button>
+      </div>
+      <div id="forestQuestList" class="quest-list"></div>
     </section>
 
     <section id="quest" class="screen">
