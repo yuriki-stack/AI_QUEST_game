@@ -35,7 +35,15 @@ function renderOpening(){
  document.getElementById("dialogue").innerHTML=`<div class="dialogue-box"><div class="speaker">${d[0]}</div><div class="bubble"><b>${d[1]}</b><p>${d[2]}</p></div></div><div class="progress"><i style="width:${((openingStep+1)/opening.length)*100}%"></i></div>`;
 }
 function nextOpening(){if(openingStep<opening.length-1){openingStep++;renderOpening()}else{showScreen("map");toast(`${state.name}さん、冒険開始！`)}}
-function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");updateStats()}
+function showScreen(id){
+ document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+ const target=document.getElementById(id);
+ if(!target)return;
+ target.classList.add("active");
+ updateStats();
+ if(id==="map") renderWorldMap();
+ if(id==="promptForest") renderForestQuests();
+}
 function updateStats(){document.getElementById("level").textContent=state.level;document.getElementById("exp").textContent=state.exp;document.getElementById("coins").textContent=state.coins}
 function openVillage(){renderQuests();showScreen("village")}
 function unlocked(q){
@@ -135,7 +143,11 @@ function levelCheck(){
  const thresholds=[0,300,700,1200,1800,2500];
  while(state.level<thresholds.length && state.exp>=thresholds[state.level]) state.level++;
 }
-function continueAfterResult(){openVillage()}
+function continueAfterResult(){
+ const q=quests.find(x=>x.id===state.currentQuest);
+ if(q && ["Q007","Q008","Q009"].includes(q.id)) openForest();
+ else openVillage();
+}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
 updateStats();
 
@@ -150,12 +162,6 @@ const worldAreas=[
  {id:"lab",name:"AI研究所",icon:"🧪",level:9},
  {id:"master",name:"AIマスター試験",icon:"👑",level:9}
 ];
-const originalShowScreen=showScreen;
-showScreen=function(id){
- originalShowScreen(id);
- if(id==="map") renderWorldMap();
- if(id==="promptForest") renderForestQuests();
-};
 function renderWorldMap(){
  const grid=document.getElementById("worldGrid");
  if(!grid)return;
@@ -174,7 +180,7 @@ function renderWorldMap(){
 function areaNotice(name,level,unlocked){
  if(!unlocked) toast(`「${name}」は Lv.${level} で解放されます。`);
  else toast(`「${name}」は解放済みです。クエストは次のアップデートで追加します。`);
-}
+}\n\nif(document.readyState!=="loading") renderWorldMap();\nelse document.addEventListener("DOMContentLoaded",renderWorldMap);
 function openForest(){
  renderForestQuests();
  showScreen("promptForest");

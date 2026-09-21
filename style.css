@@ -7,3 +7,5 @@
 .quest-card { cursor:pointer; }
 .prompt-input { width:100%; min-height:150px; box-sizing:border-box; padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,.18); background:rgba(0,0,0,.15); color:inherit; font:inherit; }
 .score-box { margin:14px 0; padding:14px; border-radius:14px; background:rgba(255,255,255,.06); line-height:1.8; }
+
+.map-loading{grid-column:1/-1;padding:28px;text-align:center;border:1px dashed #3c4c70;border-radius:16px;color:#9eb0d3;background:#151f35}
