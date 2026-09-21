@@ -1,102 +1,285 @@
-const state={
- name:"", level:1, exp:0, coins:0, completed:[], currentQuest:null,
- skill:{basic:0,prompt:0,verify:0,work:0,image:0,safety:0}
+/* AI QUEST v0.5 - Stable rebuild
+   Base: v0.3 playable architecture
+   Goal: eliminate broken screen/button overrides and provide reliable L1-L3 progression.
+*/
+const SAVE_KEY = "aiQuestSave";
+
+const QUESTS = [
+  {id:"Q001", level:1, area:"village", title:"AIとの出会い", desc:"AIとは何かを知ろう。", type:"choice",
+   question:"AIについての説明として最も近いものは？",
+   options:["人間の知的な作業の一部をコンピュータで行えるようにする技術","必ず正解を出す魔法の道具","インターネットそのもの"],
+   answer:0, exp:120, coins:30,
+   explain:"AIは、人間が行ってきた知的な作業の一部をコンピュータで扱えるようにする技術です。"},
+  {id:"Q002", level:1, area:"village", title:"AIは何ができる？", desc:"検索・生成AI・人間の判断の違いを知ろう。", type:"choice",
+   question:"生成AIの特徴として適切なのは？",
+   options:["文章・画像などのコンテンツを生成できる","必ず最新情報を知っている","人間の判断が不要になる"],
+   answer:0, exp:140, coins:35,
+   explain:"生成AIは文章や画像などを生成できます。ただし、最新情報や事実性は別途確認が必要です。"},
+  {id:"Q003", level:1, area:"village", title:"AIの得意・苦手", desc:"AIの回答をそのまま信じない習慣を身につけよう。", type:"choice",
+   question:"AIの回答を仕事で使うとき、特に重要なのは？",
+   options:["重要な情報は根拠や一次情報を確認する","AIが答えたら必ず正しいと考える","確認せずそのまま公開する"],
+   answer:0, exp:160, coins:35,
+   explain:"AIはもっともらしい誤情報を生成することがあります。重要な内容ほど検証しましょう。"},
+  {id:"Q004", level:2, area:"village", title:"最初のお願い", desc:"あいまいな依頼を具体的なプロンプトに変えよう。", type:"choice",
+   question:"「旅行を考えて」より伝わりやすい依頼はどれ？",
+   options:["東京から日帰りで行ける旅行先を3つ、予算1万円以内で表形式にしてください。","旅行について何か考えて。","いい旅行を考えて。"],
+   answer:0, exp:170, coins:40,
+   explain:"目的・条件・出力形式を具体化すると、AIが意図を理解しやすくなります。"},
+  {id:"Q005", level:2, area:"village", title:"伝わる依頼文", desc:"メール作成に必要な条件を整理しよう。", type:"choice",
+   question:"AIに仕事メールを書いてもらうとき、役立つ情報は？",
+   options:["相手・目的・要件・トーン・出力形式など","何も条件を伝えない","AIに全部任せるだけ"],
+   answer:0, exp:160, coins:35,
+   explain:"誰に、何のために、何を伝えるかを明確にすると、使いやすい文章になります。"},
+  {id:"Q006", level:2, area:"village", title:"村の掲示板を整理せよ", desc:"情報を表形式に整理する練習。", type:"choice",
+   question:"「項目・担当・期限」の情報を整理するなら、どの形式が適切？",
+   options:["表形式","意味のない長文","条件を削除した一文"],
+   answer:0, exp:170, coins:40,
+   explain:"複数項目を比較・管理する場合は表形式が扱いやすいです。"},
+  {id:"Q007", level:3, area:"forest", title:"森への入口", desc:"良いプロンプトを作る基本要素を見つけよう。", type:"choice",
+   question:"AIへの指示を強くするために、特に役立つ組み合わせは？",
+   options:["目的・対象・条件・出力形式を具体的にする","とにかく長い文章にする","「いい感じに」だけ伝える"],
+   answer:0, exp:180, coins:45,
+   explain:"長さそのものではなく、目的・対象・条件・出力形式などの具体性が重要です。"},
+  {id:"Q008", level:3, area:"forest", title:"良い指示を探せ", desc:"具体的な指示とあいまいな指示を見分けよう。", type:"choice",
+   question:"より伝わりやすいプロンプトはどちら？",
+   options:["高校生向けに、300字以内、箇条書き3点で説明してください。","分かりやすく説明して。"],
+   answer:0, exp:200, coins:50,
+   explain:"対象・文字数・形式が明確なので、AIが出力を調整しやすくなります。"},
+  {id:"Q009", level:3, area:"forest", title:"プロンプト職人への道", desc:"自分でプロンプトを書いて、伝わりやすさを高めよう。", type:"prompt",
+   exp:260, coins:70,
+   explain:"良いプロンプトは、目的・対象・条件・出力形式などが具体的です。"}
+];
+
+const AREAS=[
+ {id:"village",name:"はじまりの村",icon:"🏡",level:1,implemented:true},
+ {id:"forest",name:"プロンプトの森",icon:"🌲",level:3,implemented:true},
+ {id:"text",name:"文章生成の街",icon:"🏙️",level:5,implemented:false},
+ {id:"image",name:"画像生成の街",icon:"🎨",level:6,implemented:false},
+ {id:"guild",name:"AI仕事ギルド",icon:"💼",level:7,implemented:false},
+ {id:"safety",name:"安全・検証エリア",icon:"🛡️",level:8,implemented:false},
+ {id:"lab",name:"AI研究所",icon:"🧪",level:9,implemented:false},
+ {id:"master",name:"AIマスター試験",icon:"👑",level:9,implemented:false}
+];
+
+const LEVEL_THRESHOLDS=[0,300,700,1200,1800,2500,3300,4200,5200,6300,7500,8800,10200,11700,13300,15000,16800,18700,20700,22800];
+
+let state={
+ name:"",
+ exp:0,
+ coins:0,
+ level:1,
+ completed:[],
+ currentQuest:null,
+ skills:{basic:0,prompt:0}
 };
-const quests=[
-{id:"Q001",name:"AIとの出会い",desc:"AIの世界へ入り、生成AIの基本を知ろう。",reward:100,type:"intro"},
-{id:"Q002",name:"AIは何ができる？",desc:"検索・生成AI・人間の役割を見分けよう。",reward:120,type:"q2"},
-{id:"Q003",name:"AIの得意・苦手",desc:"AIに任せることと、人が確認することを考えよう。",reward:150,type:"q3"},
-{id:"Q004",name:"最初のお願い",desc:"曖昧なお願いを、AIに伝わる依頼へ変えてみよう。",reward:180,type:"q4"},
-{id:"Q005",name:"伝わる依頼文",desc:"目的・相手・条件を入れたプロンプトを作ろう。",reward:220,type:"q5"},
-{id:"Q006",name:"村の掲示板を整理せよ",desc:"掲示板の情報を整理してみよう。",reward:150,type:"q6"},
-{id:"Q007",name:"森への入口",desc:"良いプロンプトを作る基本要素を見つけよう。",reward:180,type:"q7"},
-{id:"Q008",name:"良い指示を探せ",desc:"具体的な指示と、あいまいな指示を見分けよう。",reward:200,type:"q8"},
-{id:"Q009",name:"プロンプト職人への道",desc:"自分でプロンプトを書いて、伝わりやすさを高めよう。",reward:260,type:"q9"}
-];
-let openingStep=0;
-const opening=[
-["🐱","アイニャ","こんにちは！ここはAIの世界だよ。もしかして、AIを使ったことがないの？"],
-["🧑‍🌾","村長","ようこそ、冒険者さん。まずはAIが何を得意としているのか、一緒に確かめてみよう。"],
-["🐱","アイニャ","大丈夫！ここでは、遊びながらAIへのお願いの仕方を覚えられるよ。失敗しても何度でもやり直せるからね。"]
-];
-function save(){localStorage.setItem("aiQuestSave",JSON.stringify(state))}
-function loadGame(){
- const raw=localStorage.getItem("aiQuestSave");
- if(!raw){toast("セーブデータがありません");return}
- Object.assign(state,JSON.parse(raw)); updateStats(); showScreen("map"); toast("冒険の続きを読み込みました");
+let currentQuest=null;
+
+function $(id){return document.getElementById(id);}
+
+function normalizeState(raw){
+ const s={...state,...(raw||{})};
+ s.completed=Array.isArray(s.completed)?s.completed:[];
+ s.skills=s.skills&&typeof s.skills==="object"?s.skills:{basic:0,prompt:0};
+ s.exp=Number(s.exp)||0;
+ s.coins=Number(s.coins)||0;
+ s.level=1;
+ for(let i=1;i<LEVEL_THRESHOLDS.length;i++) if(s.exp>=LEVEL_THRESHOLDS[i]) s.level=i+1;
+ return s;
 }
-function startGame(){showScreen("profile")}
-function createProfile(){
- state.name=document.getElementById("playerName").value.trim()||"冒険者";
- save(); openingStep=0; renderOpening(); showScreen("opening");
+
+function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(state));}
+
+function load(){
+ try{
+  const raw=localStorage.getItem(SAVE_KEY);
+  state=normalizeState(raw?JSON.parse(raw):null);
+ }catch(e){
+  state=normalizeState(null);
+ }
+ currentQuest=QUESTS.find(q=>q.id===state.currentQuest)||null;
+ save();
 }
-function renderOpening(){
- const d=opening[openingStep];
- document.getElementById("dialogue").innerHTML=`<div class="dialogue-box"><div class="speaker">${d[0]}</div><div class="bubble"><b>${d[1]}</b><p>${d[2]}</p></div></div><div class="progress"><i style="width:${((openingStep+1)/opening.length)*100}%"></i></div>`;
+
+function updateStats(){
+ const levelEl=$("levelValue")||$("level");
+ const expEl=$("expValue")||$("exp");
+ const coinEl=$("coinValue")||$("coins");
+ const nameEl=$("playerName");
+ if(levelEl) levelEl.textContent="Lv."+state.level;
+ if(expEl) expEl.textContent=String(state.exp);
+ if(coinEl) coinEl.textContent=String(state.coins);
+ if(nameEl) nameEl.textContent=state.name||"冒険者";
 }
-function nextOpening(){if(openingStep<opening.length-1){openingStep++;renderOpening()}else{showScreen("map");toast(`${state.name}さん、冒険開始！`)}}
+
 function showScreen(id){
- document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
- const target=document.getElementById(id);
- if(!target)return;
+ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+ const target=$(id);
+ if(!target) return;
  target.classList.add("active");
  updateStats();
  if(id==="map") renderWorldMap();
- if(id==="promptForest") renderForestQuests();
+ if(id==="village") renderVillage();
+ if(id==="promptForest") renderForest();
 }
-function updateStats(){document.getElementById("level").textContent=state.level;document.getElementById("exp").textContent=state.exp;document.getElementById("coins").textContent=state.coins}
-function openVillage(){renderQuests();showScreen("village")}
-function unlocked(q){
- const levelReq = q.id==="Q007"||q.id==="Q008"||q.id==="Q009" ? 3 : 1;
- const i=quests.findIndex(x=>x.id===q.id);
- return state.level>=levelReq && (i===0 || state.completed.includes(quests[i-1].id));
+
+function toast(message){
+ let t=$("toast");
+ if(!t){
+  t=document.createElement("div");
+  t.id="toast";
+  t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;padding:12px 18px;border-radius:14px;background:#172033;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.35);font-weight:700;";
+  document.body.appendChild(t);
+ }
+ t.textContent=message;t.style.display="block";
+ clearTimeout(window.__aiQuestToast);
+ window.__aiQuestToast=setTimeout(()=>t.style.display="none",2400);
 }
-function renderQuests(){
- document.getElementById("questList").innerHTML=quests.map(q=>{
-  const done=state.completed.includes(q.id), ok=unlocked(q);
-  return `<button class="quest-card" ${ok?'':'disabled'} onclick="${ok?`startQuest('${q.id}')`:''}">
-   <div class="qicon">${done?'✅':'📜'}</div><div><span class="tag">${done?'CLEAR':ok?'AVAILABLE':'LOCKED'}</span><h3>${q.name}</h3><p>${q.desc}</p></div><div class="quest-action">${ok?`<b>EXP ${q.reward}</b>`:'🔒'}</div></button>`
- }).join("");
+
+function startAdventure(){
+ const input=$("profileName")||$("nameInput")||$("playerNameInput");
+ if(input && input.value.trim()) state.name=input.value.trim();
+ if(!state.name) state.name="冒険者";
+ save();
+ showScreen("opening");
 }
+
+function continueGame(){
+ load();
+ // A save always exists after load. Continue from the current progression.
+ showScreen("map");
+}
+
+function startNewGame(){
+ state=normalizeState({name:"",exp:0,coins:0,level:1,completed:[],currentQuest:null,skills:{basic:0,prompt:0}});
+ currentQuest=null;
+ save();
+ showScreen("profile");
+}
+
+function confirmProfile(){
+ const input=$("profileName")||$("nameInput")||$("playerNameInput");
+ state.name=(input?.value||"冒険者").trim()||"冒険者";
+ save();
+ showScreen("opening");
+}
+
+function levelCheck(){
+ const old=state.level;
+ state.level=1;
+ for(let i=1;i<LEVEL_THRESHOLDS.length;i++) if(state.exp>=LEVEL_THRESHOLDS[i]) state.level=i+1;
+ save();
+ if(state.level>old) toast(`🎉 LEVEL UP! Lv.${state.level}`);
+}
+
+function renderWorldMap(){
+ const grid=$("worldGrid");
+ if(!grid)return;
+ grid.innerHTML="";
+ AREAS.forEach(a=>{
+  const unlocked=state.level>=a.level;
+  const card=document.createElement("button");
+  card.type="button";
+  card.className="world-card "+(unlocked?"unlocked":"locked");
+  card.innerHTML=`<div class="icon">${unlocked?a.icon:"🔒"}</div>
+   <h3>${a.name}</h3>
+   <div class="status">${unlocked?(a.implemented?"▶ 選択できます":"🔓 解放済み・準備中"):`Lv.${a.level}で解放`}</div>`;
+  if(unlocked){
+   if(a.id==="village") card.onclick=()=>openVillage();
+   else if(a.id==="forest") card.onclick=()=>openForest();
+   else card.onclick=()=>toast(`${a.name}は解放済みです。次のアップデートでクエストを追加します。`);
+  }else{
+   card.onclick=()=>toast(`${a.name}はLv.${a.level}で解放されます。`);
+  }
+  grid.appendChild(card);
+ });
+ const next=AREAS.find(a=>a.level>state.level);
+ const msg=$("mapMessage");
+ if(msg)msg.textContent=next?`現在 Lv.${state.level}｜次は Lv.${next.level}で「${next.name}」が解放されます。`:"すべてのエリアが解放されています。";
+}
+
+function openVillage(){showScreen("village");}
+
+function openForest(){showScreen("promptForest");}
+
+function renderQuestCards(container, area){
+ if(!container)return;
+ container.innerHTML="";
+ QUESTS.filter(q=>q.area===area).forEach(q=>{
+  const done=state.completed.includes(q.id);
+  const previous=q.id==="Q001"?true:state.completed.includes(QUESTS[QUESTS.findIndex(x=>x.id===q.id)-1]?.id);
+  const available=state.level>=q.level && previous;
+  const card=document.createElement("div");
+  card.className="quest-card-v5";
+  card.innerHTML=`<div class="meta"><h3>${done?"✅ ":""}${q.id} ${q.title}</h3><p>${q.desc}</p><p class="status">報酬：EXP ${q.exp} / 🪙 ${q.coins}</p></div>`;
+  const btn=document.createElement("button");
+  btn.className=available?"primary":"secondary";
+  btn.textContent=done?"もう一度":"開始";
+  btn.disabled=!available;
+  btn.onclick=()=>startQuest(q.id);
+  card.appendChild(btn);
+  container.appendChild(card);
+ });
+}
+
+function renderVillage(){
+ const el=$("villageQuestList")||$("questList");
+ if(el)renderQuestCards(el,"village");
+}
+
+function renderForest(){
+ renderQuestCards($("forestQuestList"),"forest");
+}
+
 function startQuest(id){
- state.currentQuest=id; const q=quests.find(x=>x.id===id);
- document.getElementById("questHeader").innerHTML=`<span class="tag">${q.id}</span><h2>${q.name}</h2><p>${q.desc}</p>`;
- renderQuestContent(q); showScreen("quest");
+ const q=QUESTS.find(x=>x.id===id);
+ if(!q)return;
+ if(state.level<q.level){toast(`Lv.${q.level}で解放されます。`);return;}
+ const index=QUESTS.findIndex(x=>x.id===id);
+ if(index>0 && !state.completed.includes(QUESTS[index-1].id)){toast("前のクエストをクリアすると挑戦できます。");return;}
+ currentQuest=q;
+ state.currentQuest=id;
+ save();
+ showScreen("quest");
+ renderQuest();
 }
-function renderQuestContent(q){
- const box=document.getElementById("questContent");
- if(q.type==="intro") box.innerHTML=`<div class="dialogue-box"><div class="speaker">🐱</div><div class="bubble"><b>アイニャ</b><p>まずは基本から！「生成AI」に近い説明はどれかな？</p></div></div><div class="choices">
- <button class="option" onclick="answerQuest('Q001',true)">指示に応じて文章や画像などのコンテンツを生成するAI</button>
- <button class="option" onclick="answerQuest('Q001',false)">インターネット上の情報を必ず正しく表示する仕組み</button></div>`;
- else if(q.type==="q2") box.innerHTML=`<div class="question-title">次の役割を正しく組み合わせよう。</div><div class="choices">
- <button class="option" onclick="answerQuest('Q002',true)">検索＝情報を探す / 生成AI＝指示に応じて生成 / 人＝重要な判断を確認</button>
- <button class="option" onclick="answerQuest('Q002',false)">検索＝文章生成 / 生成AI＝必ず正しい情報を保証 / 人＝確認不要</button></div>`;
- else if(q.type==="q3") box.innerHTML=`<div class="question-title">「AIの回答は常に正しい」という説明は？</div><div class="choices">
- <button class="option" onclick="answerQuest('Q003',false)">正しい</button><button class="option" onclick="answerQuest('Q003',true)">正しくない。重要な情報は確認が必要</button></div>`;
- else if(q.type==="q4") box.innerHTML=`<div class="question-title">「旅行を考えて」を、より伝わる依頼にするなら？</div><div class="choices">
- <button class="option" onclick="answerQuest('Q004',true)">東京で3日間、予算3万円。初心者向けの旅行プランを、1日ごとの表で作って。</button>
- <button class="option" onclick="answerQuest('Q004',false)">旅行について詳しく。</button></div>`;
- else if(q.type==="q5") box.innerHTML=`<div class="question-title">メール作成の依頼に入れると役立つ要素を3つ以上選ぼう。</div><div class="choices">
- <button class="option" onclick="answerQuest('Q005',true)">相手・目的・伝えたい内容・文体・出力形式</button>
- <button class="option" onclick="answerQuest('Q005',false)">「いい感じにして」だけ</button></div>`;
- else if(q.type==="q6") box.innerHTML=`<div class="question-title">掲示板の情報をAIに整理してもらう依頼として適切なのは？</div><div class="choices">
- <button class="option" onclick="answerQuest('Q006',true)">掲示板の内容を「イベント名・日時・場所・持ち物」の表に整理してください。</button>
- <button class="option" onclick="answerQuest('Q006',false)">掲示板をなんとなくまとめて。</button></div>`;
- else if(q.type==="q7") box.innerHTML=`<div class="question-title">AIへの指示を強くするために、特に役立つ組み合わせは？</div><div class="choices">
- <button class="option" onclick="answerQuest('Q007',true)">目的・対象・条件・出力形式を具体的にする</button>
- <button class="option" onclick="answerQuest('Q007',false)">とにかく長い文章にして、最後は「いい感じに」とだけ書く</button></div>`;
- else if(q.type==="q8") box.innerHTML=`<div class="question-title">より伝わりやすいプロンプトはどちら？</div><div class="choices">
- <button class="option" onclick="answerQuest('Q008',true)">高校生向けに、300字以内、箇条書き3点で説明してください。</button>
- <button class="option" onclick="answerQuest('Q008',false)">分かりやすく説明して。</button></div>`;
- else if(q.type==="q9") box.innerHTML=`<div class="question-title">自分でプロンプトを作ろう</div>
- <p>「高校生にも分かるように、生成AIを説明する」依頼を、AIに伝わりやすくしてください。</p>
- <div class="score-box">🎯 目的　👤 対象　📏 条件　📋 出力形式<br>この4要素をできるだけ具体的に入れてみよう。</div>
- <textarea id="promptInput" class="prompt-input" placeholder="例：高校生向けに、生成AIとは何かを200字以内で、具体例を1つ入れて、箇条書き3点で説明してください。"></textarea>
- <p><button class="primary" onclick="scorePrompt()">プロンプトを評価する</button></p>`;
+
+function renderQuest(){
+ if(!currentQuest)return;
+ const title=$("questTitle");
+ const body=$("questBody")||$("questContent");
+ if(title)title.textContent=`${currentQuest.id} ${currentQuest.title}`;
+ if(!body)return;
+ if(currentQuest.type==="choice"){
+  body.innerHTML=`<p>${currentQuest.desc}</p><h3>${currentQuest.question}</h3>
+   <div class="choices">${currentQuest.options.map((o,i)=>`<button class="option" onclick="answerChoice(${i})">${o}</button>`).join("")}</div>
+   <p class="save-note">間違えてもゲームオーバーにはなりません。理由を確認して再挑戦できます。</p>`;
+ }else{
+  body.innerHTML=`<p>${currentQuest.desc}</p>
+   <h3>テーマ：高校生にも分かるように「生成AIとは何か」を説明してください。</h3>
+   <div class="score-grid-v5">
+    <div class="score-item-v5">🎯 目的</div><div class="score-item-v5">👤 対象</div>
+    <div class="score-item-v5">📏 条件</div><div class="score-item-v5">📋 出力形式</div>
+   </div>
+   <textarea id="promptInput" class="prompt-input-v5" placeholder="例：高校生向けに、生成AIとは何かを200字以内で、具体例を1つ入れて、箇条書き3点で説明してください。"></textarea>
+   <button class="primary" onclick="scorePrompt()">プロンプトを評価する</button>
+   <div id="promptFeedback"></div>`;
+ }
 }
+
+function answerChoice(index){
+ const q=currentQuest;
+ const correct=index===q.answer;
+ const body=$("questBody")||$("questContent");
+ if(correct){
+  if(body)body.innerHTML=`<div class="feedback"><h3>正解！</h3><p>${q.explain}</p><button class="primary" onclick="completeCurrentQuest()">クリアして進む</button></div>`;
+ }else{
+  if(body)body.insertAdjacentHTML("beforeend",`<div class="feedback"><h3>もう一度考えてみよう</h3><p>${q.explain}</p></div>`);
+ }
+}
+
 function scorePrompt(){
- const input=(document.getElementById("promptInput").value||"").trim();
- if(input.length<10){toast("もう少し具体的に書いてみよう！");return;}
+ const input=($("promptInput")?.value||"").trim();
+ if(input.length<10){toast("もう少し具体的に書いてみましょう。");return;}
  const checks=[
   ["目的",20,/(説明|解説|教え|まとめ|生成|作成|理解)/.test(input)],
   ["対象",20,/(高校生|初心者|子ども|社会人|読者|向け|対象)/.test(input)],
@@ -104,99 +287,71 @@ function scorePrompt(){
   ["出力形式",20,/(箇条書き|表|形式|見出し|ステップ|リスト|文章)/.test(input)],
   ["具体性",15,input.length>=35]
  ];
- const score=checks.reduce((s,x)=>s+(x[2]?x[1]:0),0);
+ const score=checks.reduce((sum,x)=>sum+(x[2]?x[1]:0),0);
  const detail=checks.map(x=>`${x[2]?"✓":"△"} ${x[0]}：${x[2]?x[1]+"点":"改善できます"}`).join("<br>");
- const box=document.getElementById("questContent");
- box.insertAdjacentHTML("beforeend",`<div class="feedback"><b>プロンプト評価：${score}点</b><br>${detail}<br><br>${score>=70?"十分に具体的です！":"足りない要素を追加して、もう一度改善してみよう。"}<br><button class="secondary" onclick="scorePromptRetry()">もう一度改善する</button></div>`);
- if(score>=70) completeQuest(quests.find(x=>x.id==="Q009"));
+ const fb=$("promptFeedback");
+ fb.innerHTML=`<div class="feedback"><h3>プロンプト評価：${score}点</h3><p>${detail}</p>
+ <p>${score>=70?"十分に具体的です。":"足りない要素を追加すると、もっと伝わりやすくなります。"}</p>
+ ${score>=70?'<button class="primary" onclick="completeCurrentQuest()">クリアして進む</button>':''}</div>`;
 }
-function scorePromptRetry(){
- const q=quests.find(x=>x.id==="Q009");
- document.getElementById("questContent").innerHTML="";
- renderQuestContent(q);
-}
-function answerQuest(id,correct){
- const q=quests.find(x=>x.id===id);
- if(correct){completeQuest(q);return}
- document.getElementById("questContent").insertAdjacentHTML("beforeend",`<div class="feedback"><b>もう一度考えてみよう。</b><br>ヒント：AIにお願いするときは「何をしてほしいか」「どんな条件か」「どんな形で出してほしいか」を具体的にすると伝わりやすくなります。<br><button class="secondary" onclick="startQuest('${id}')">もう一度挑戦</button></div>`);
-}
-function completeQuest(q){
- let leveledUp=false;
- if(!state.completed.includes(q.id)){
-   const oldLevel=state.level;
-   state.completed.push(q.id);
-   state.exp+=q.reward;
-   state.coins+=Math.round(q.reward*.5);
-   if(["Q001","Q002","Q003"].includes(q.id)) state.skill.basic+=10;
-   if(["Q004","Q005","Q007","Q008","Q009"].includes(q.id)) state.skill.prompt+=10;
-   levelCheck();
-   leveledUp=state.level>oldLevel;
-   save();
+
+function completeCurrentQuest(){
+ const q=currentQuest;
+ if(!q)return;
+ const firstClear=!state.completed.includes(q.id);
+ if(firstClear){
+  state.completed.push(q.id);
+  state.exp+=q.exp;
+  state.coins+=q.coins;
+  if(q.area==="village" && ["Q001","Q002","Q003"].includes(q.id))state.skills.basic+=10;
+  if(q.area==="village" && ["Q004","Q005","Q006"].includes(q.id))state.skills.prompt+=10;
+  if(q.area==="forest")state.skills.prompt+=10;
+  const old=state.level;
+  levelCheck();
+  save();
+  const leveled=state.level>old;
+  showResult(q,leveled);
+ }else{
+  showResult(q,false,true);
  }
- document.getElementById("resultTitle").textContent="クエストクリア！";
- document.getElementById("resultMessage").innerHTML=`${q.name}をクリアしました。<br>理由を理解して次の冒険へ進もう！${leveledUp?`<br><br>🎉 <b>LEVEL ${state.level} 解放！</b>`:""}`;
- document.getElementById("reward").innerHTML=`<span>✨ EXP +${q.reward}</span><span>🪙 コイン +${Math.round(q.reward*.5)}</span>`;
+}
+
+function showResult(q,leveled,replay=false){
+ const title=$("resultTitle");
+ const msg=$("resultMessage")||$("resultBody");
+ const reward=$("reward");
+ if(title)title.textContent="クエストクリア！";
+ if(msg)msg.innerHTML=`<p>${q.title}をクリアしました。</p>${q.explain?`<p>${q.explain}</p>`:""}${leveled?`<p>🎉 <b>Lv.${state.level}に上がりました！新しいエリアが解放されました。</b></p>`:""}${replay?"<p>再挑戦のため報酬は追加されません。</p>":""}`;
+ if(reward)reward.innerHTML=replay?"":`<span>✨ EXP +${q.exp}</span><span>🪙 コイン +${q.coins}</span>`;
  showScreen("result");
- if(leveledUp) setTimeout(()=>toast(`🎉 Lv.${state.level}！新しいエリアが解放されました！`),350);
 }
-function levelCheck(){
- const thresholds=[0,300,700,1200,1800,2500];
- while(state.level<thresholds.length && state.exp>=thresholds[state.level]) state.level++;
-}
+
 function continueAfterResult(){
- const q=quests.find(x=>x.id===state.currentQuest);
- if(q && ["Q007","Q008","Q009"].includes(q.id)) openForest();
+ if(currentQuest?.area==="forest")openForest();
  else openVillage();
 }
-function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
-updateStats();
 
-/* v0.4 dynamic world map */
-const worldAreas=[
- {id:"village",name:"はじまりの村",icon:"🏡",level:1},
- {id:"forest",name:"プロンプトの森",icon:"🌲",level:3},
- {id:"text",name:"文章生成の街",icon:"🏙️",level:5},
- {id:"image",name:"画像生成の街",icon:"🎨",level:6},
- {id:"guild",name:"AI仕事ギルド",icon:"💼",level:7},
- {id:"safety",name:"安全・検証エリア",icon:"🛡️",level:8},
- {id:"lab",name:"AI研究所",icon:"🧪",level:9},
- {id:"master",name:"AIマスター試験",icon:"👑",level:9}
-];
-function renderWorldMap(){
- const grid=document.getElementById("worldGrid");
- if(!grid)return;
- grid.innerHTML=worldAreas.map(a=>{
-  const unlocked=state.level>=a.level;
-  const playable=a.id==="village"||a.id==="forest";
-  const status=unlocked?(playable?"▶ 選択できます":"🔓 解放済み・準備中"):`🔒 Lv.${a.level}で解放`;
-  return `<button class="world ${unlocked?"unlocked":"locked"}" ${unlocked&&playable?`onclick="${a.id==="village"?"openVillage()":"openForest()"}"`:`onclick="areaNotice('${a.name}',${a.level},${unlocked})"`}>
-    <span>${a.icon}</span><b>${a.name}</b><small class="map-status">${status}</small>
-  </button>`;
- }).join("");
- const next=worldAreas.find(a=>a.level>state.level);
- const msg=document.getElementById("mapMessage");
- if(msg)msg.textContent=next?`現在 Lv.${state.level}　｜　次は Lv.${next.level} で「${next.name}」が解放されます。`:`現在 Lv.${state.level}　｜　すべてのエリアが解放されています。`;
+function safeStartBindings(){
+ // Existing v0.3 buttons
+ const start=$("startBtn");
+ const continueBtn=$("continueBtn");
+ const newGame=$("newGameBtn");
+ if(start)start.onclick=startNewGame;
+ if(continueBtn)continueBtn.onclick=continueGame;
+ if(newGame)newGame.onclick=startNewGame;
+
+ // Generic fallbacks by button text, only when no inline handler is present.
+ document.querySelectorAll("button").forEach(btn=>{
+  if(btn.getAttribute("onclick"))return;
+  const t=(btn.textContent||"").trim();
+  if(t==="冒険をはじめる")btn.onclick=startNewGame;
+  else if(t==="続きから")btn.onclick=continueGame;
+  else if(t==="タイトルへ")btn.onclick=()=>showScreen("title");
+ });
 }
-function areaNotice(name,level,unlocked){
- if(!unlocked) toast(`「${name}」は Lv.${level} で解放されます。`);
- else toast(`「${name}」は解放済みです。クエストは次のアップデートで追加します。`);
-}\n\nif(document.readyState!=="loading") renderWorldMap();\nelse document.addEventListener("DOMContentLoaded",renderWorldMap);
-function openForest(){
- renderForestQuests();
- showScreen("promptForest");
-}
-function renderForestQuests(){
- const list=document.getElementById("forestQuestList");
- if(!list)return;
- const qs=quests.filter(q=>["Q007","Q008","Q009"].includes(q.id));
- list.innerHTML=qs.map(q=>{
-  const done=state.completed.includes(q.id);
-  const prev=q.id==="Q007"?true:q.id==="Q008"?state.completed.includes("Q007"):state.completed.includes("Q008");
-  const ok=state.level>=3&&prev;
-  return `<button class="quest-card" ${ok?'':'disabled'} onclick="${ok?`startQuest('${q.id}')`:''}">
-   <div class="qicon">${done?"✅":ok?"📜":"🔒"}</div>
-   <div><span class="tag">${done?"CLEAR":ok?"AVAILABLE":"LOCKED"}</span><h3>${q.name}</h3><p>${q.desc}</p></div>
-   <div class="quest-action"><b>EXP ${q.reward}</b></div>
-  </button>`;
- }).join("");
-}
+
+document.addEventListener("DOMContentLoaded",()=>{
+ load();
+ updateStats();
+ safeStartBindings();
+});
