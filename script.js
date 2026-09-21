@@ -135,19 +135,9 @@ function toast(message){
  window.__aiQuestToast=setTimeout(()=>t.style.display="none",2400);
 }
 
-function startAdventure(){
- const input=$("profileName")||$("nameInput")||$("playerNameInput");
- if(input && input.value.trim()) state.name=input.value.trim();
- if(!state.name) state.name="冒険者";
- save();
- showScreen("opening");
-}
 
-function continueGame(){
- load();
- // A save always exists after load. Continue from the current progression.
- showScreen("map");
-}
+
+
 
 function startNewGame(){
  state=normalizeState({name:"",exp:0,coins:0,level:1,completed:[],currentQuest:null,skills:{basic:0,prompt:0}});
@@ -348,6 +338,72 @@ function safeStartBindings(){
   else if(t==="続きから")btn.onclick=continueGame;
   else if(t==="タイトルへ")btn.onclick=()=>showScreen("title");
  });
+}
+
+
+/* Compatibility handlers for the actual HTML buttons */
+function startGame(){
+  startNewGame();
+}
+
+function loadGame(){
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw){
+    toast("セーブデータがありません。先に「冒険をはじめる」を選んでください。");
+    return;
+  }
+  try{
+    state=normalizeState(JSON.parse(raw));
+    currentQuest=QUESTS.find(q=>q.id===state.currentQuest)||null;
+    save();
+    updateStats();
+    showScreen("map");
+    toast("冒険の続きを読み込みました");
+  }catch(e){
+    localStorage.removeItem(SAVE_KEY);
+    toast("セーブデータを読み込めなかったため、新しく始めてください。");
+  }
+}
+
+function createProfile(){
+  const input=$("playerName");
+  state.name=(input?.value||"冒険者").trim()||"冒険者";
+  state.exp=0;
+  state.coins=0;
+  state.level=1;
+  state.completed=[];
+  state.currentQuest=null;
+  state.skills={basic:0,prompt:0};
+  currentQuest=null;
+  openingStep=0;
+  save();
+  renderOpening();
+  showScreen("opening");
+}
+
+let openingStep=0;
+const opening=[
+  ["🐱","アイニャ","こんにちは！ここはAIの世界だよ。もしかして、AIを使ったことがないの？"],
+  ["🧑‍🌾","村長","ようこそ、冒険者さん。まずはAIが何を得意としているのか、一緒に確かめてみよう。"],
+  ["🐱","アイニャ","大丈夫！ここでは、遊びながらAIへのお願いの仕方を覚えられるよ。失敗しても何度でもやり直せるからね。"]
+];
+
+function renderOpening(){
+  const d=opening[openingStep];
+  const el=$("dialogue");
+  if(!el)return;
+  el.innerHTML=`<div class="dialogue-box"><div class="speaker">${d[0]}</div><div class="bubble"><b>${d[1]}</b><p>${d[2]}</p></div></div>
+  <div class="progress"><i style="width:${((openingStep+1)/opening.length)*100}%"></i></div>`;
+}
+
+function nextOpening(){
+  if(openingStep<opening.length-1){
+    openingStep++;
+    renderOpening();
+  }else{
+    showScreen("map");
+    toast(`${state.name}さん、冒険開始！`);
+  }
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
