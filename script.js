@@ -63,7 +63,13 @@ function fresh(){return {name:"AI QUEST冒険者",level:1,exp:0,coins:0,cleared:
 function load(){try{return JSON.parse(localStorage.getItem(SAVE_KEY))}catch(e){return null}}
 function persist(){localStorage.setItem(SAVE_KEY,JSON.stringify(save));updateTop();document.getElementById("saveHint").textContent="セーブデータがあります。";}
 
-function calcLevel(){let lv=1,need=300;while(save.exp>=need&&lv<30){save.exp-=need;lv++;need+=250+lv*50}save.level=Math.max(save.level,lv)}
+function calcLevel(){
+ // EXPは累積値として保持し、レベル判定だけを行う（EXPを減算しない）
+ let lv=1, total=save.exp;
+ let need=300;
+ while(total>=need && lv<30){ total-=need; lv++; need+=250+lv*50; }
+ save.level=Math.max(save.level,lv);
+}
 function updateTop(){document.getElementById("level").textContent=`Lv.${save.level}`;document.getElementById("exp").textContent=`EXP ${save.exp}`;document.getElementById("coins").textContent=`🪙 ${save.coins}`}
 function show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");updateTop();window.scrollTo({top:0,behavior:"smooth"})}
 
@@ -144,8 +150,9 @@ function evaluate(){
     calcLevel();persist();
    }
    answered=true;
-   document.getElementById("checkBtn").textContent="報酬を受け取る";
-   document.getElementById("checkBtn").onclick=()=>showResult(q,score);
+   // 正解した時点でクリアを確定。二段階ボタン操作を廃止して状態反映漏れを防ぐ。
+   renderQuests();
+   showResult(q,score);
  }else{
    save.mistakes=[...new Set([...save.mistakes,q.id])];persist();
  }
