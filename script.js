@@ -112,7 +112,15 @@ function calcLevel(){
 function updateTop(){document.getElementById("level").textContent=`Lv.${save.level}`;document.getElementById("exp").textContent=`EXP ${save.exp}`;document.getElementById("coins").textContent=`🪙 ${save.coins}`}
 function show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");updateTop();window.scrollTo({top:0,behavior:"smooth"})}
 
-function isAreaUnlocked(a){return save.level>=a.unlock || a.id==="village"}
+function isAreaUnlocked(a){
+ // レベル条件に加えて、直前エリアをすべてクリアしていれば次エリアを解放する。
+ // これにより「前エリアを全部クリアしたのに、EXP不足で進めない」状態を防ぐ。
+ if(a.id==="village") return true;
+ if(save.level>=a.unlock) return true;
+ const idx=areas.findIndex(x=>x.id===a.id);
+ if(idx<=0) return true;
+ return areaCleared(areas[idx-1]);
+}
 function areaCleared(a){return quests.filter(q=>q.area===a.id&&!q.id.endsWith("A")).every(q=>save.cleared.includes(q.id))}
 function questState(q){
  if(save.cleared.includes(q.id)) return "clear";
@@ -131,9 +139,10 @@ function renderMap(){
  const g=document.getElementById("mapGrid");
  g.innerHTML=areas.map(a=>{
   const open=isAreaUnlocked(a),done=areaCleared(a);
+  const unlockText = open ? (save.level>=a.unlock || a.id==="village" ? "入る" : "入る（前エリアCLEAR）") : "🔒 Lv."+a.unlock;
   return `<div class="map-card ${open?"":"locked"}">
    <div><div class="map-icon">${a.icon}</div><h3>${a.name}${done?" ✓":""}</h3><p>${a.desc}</p></div>
-   <button ${open?"":"disabled"} data-area="${a.id}">${open?"入る":"🔒 Lv."+a.unlock}</button>
+   <button ${open?"":"disabled"} data-area="${a.id}">${unlockText}</button>
   </div>`}).join("");
  g.querySelectorAll("[data-area]").forEach(b=>b.onclick=()=>{currentArea=b.dataset.area;renderQuests();show("quests")});
 }
@@ -142,14 +151,19 @@ function renderQuests(){
  const qs=quests.filter(q=>q.area===currentArea);
  document.getElementById("questList").innerHTML=qs.map(q=>{
   const st=questState(q), label=st==="clear"?"CLEAR":st==="available"?"挑戦可能":"LOCKED";
-  return `<div class="quest-card"><div class="qicon">${st==="clear"?"✅":st==="locked"?"🔒":"📜"}</div><div class="qmain"><span class="badge ${st}">${label}</span><h3>${q.id}｜${q.title}</h3><p>Lv.${q.lv} ・ ${q.desc} ・ EXP ${q.reward}</p></div><button ${st==="available"?"":"disabled"} data-q="${q.id}">${st==="clear"?"クリア済み":"開始"}</button></div>`}).join("");
+  const buttonText = st==="clear" ? "もう一度" : st==="available" ? "開始" : "開始";
+  const buttonDisabled = st==="locked" ? "disabled" : "";
+  return `<div class="quest-card"><div class="qicon">${st==="clear"?"✅":st==="locked"?"🔒":"📜"}</div><div class="qmain"><span class="badge ${st}">${label}</span><h3>${q.id}｜${q.title}</h3><p>Lv.${q.lv} ・ ${q.desc} ・ EXP ${q.reward}</p></div><button ${buttonDisabled} data-q="${q.id}">${buttonText}</button></div>`}).join("");
  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>startQuest(b.dataset.q));
 }
 function startQuest(id){
- const q=quests.find(x=>x.id===id);if(!q||questState(q)!=="available")return;
+ const q=quests.find(x=>x.id===id);if(!q)return;
+ const state=questState(q);
+ if(state!=="available" && state!=="clear")return;
+ const replay=state==="clear";
  currentQuest=q;selected=[];answered=false;
- document.getElementById("questTag").textContent=`${q.id} / LEVEL ${q.lv}`;
- document.getElementById("questReward").textContent=`EXP ${q.reward}`;
+ document.getElementById("questTag").textContent=`${q.id} / LEVEL ${q.lv}${replay?" / 再チャレンジ":""}`;
+ document.getElementById("questReward").textContent=replay?"初回報酬は取得済み":`EXP ${q.reward}`;
  document.getElementById("questTitle").textContent=q.title;
  document.getElementById("questIntro").textContent=q.desc;
  const body=document.getElementById("questBody");
@@ -164,6 +178,7 @@ function startQuest(id){
  });
  document.getElementById("feedback").className="feedback hidden";
  document.getElementById("checkBtn").textContent=q.type==="master"?"最終評価":"回答を確認";
+ currentQuest._replay=replay;
  show("quest");
 }
 function evaluate(){
@@ -197,26 +212,28 @@ function evaluate(){
   persist();
   return;
  }
- completeQuest(q);
- showResult(q,score);
+ const firstClear=completeQuest(q);
+ showResult(q,score,firstClear);
 }
 function completeQuest(q){
- // クリア判定を1か所に集約。すべてのQで同じ保存処理を通す。
- if(save.cleared.includes(q.id))return;
+ // 初回クリアだけ報酬を付与。再チャレンジは何度でも可能だが二重報酬にはしない。
+ if(save.cleared.includes(q.id))return false;
  save.cleared.push(q.id);
  save.exp+=q.reward;
  save.coins+=Math.max(20,Math.round(q.reward/10));
  save.skills[q.skill]=Math.min(100,(save.skills[q.skill]||0)+Math.max(5,Math.round(q.reward/80)));
  calcLevel();
  persist();
- // 現在エリアの表示も即時更新
  if(currentArea)renderQuests();
+ return true;
 }
-function showResult(q,score){
- document.getElementById("resultIcon").textContent="🎉";
- document.getElementById("resultTitle").textContent=`${q.id} クリア！`;
- document.getElementById("resultText").textContent=q.explain;
- document.getElementById("resultStats").innerHTML=`<div>スコア <b>${score}</b></div><div>EXP +${q.reward}</div><div>🪙 +${Math.max(20,Math.round(q.reward/10))}</div>`;
+function showResult(q,score,firstClear=true){
+ document.getElementById("resultIcon").textContent=firstClear?"🎉":"🔁";
+ document.getElementById("resultTitle").textContent=firstClear?`${q.id} クリア！`:`${q.id} 再チャレンジ成功！`;
+ document.getElementById("resultText").textContent=firstClear?q.explain:`${q.explain}\n\n今回は再チャレンジです。初回クリア報酬はすでに取得済みです。`;
+ document.getElementById("resultStats").innerHTML=firstClear
+  ?`<div>スコア <b>${score}</b></div><div>EXP +${q.reward}</div><div>🪙 +${Math.max(20,Math.round(q.reward/10))}</div>`
+  :`<div>スコア <b>${score}</b></div><div>初回報酬：取得済み</div><div>何度でも再挑戦OK</div>`;
  document.getElementById("resultNext").onclick=()=>{currentArea=q.area;renderQuests();show("quests")};
  show("result");
 }
