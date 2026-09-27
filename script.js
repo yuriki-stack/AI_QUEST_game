@@ -1,4 +1,5 @@
-const SAVE_KEY="AI_QUEST_V1_1_SAVE";
+const SAVE_KEY="AI_QUEST_V1_2_SAVE";
+const OLD_SAVE_KEY="AI_QUEST_V1_1_SAVE";
 
 const areas=[
  {id:"village",name:"はじまりの村",icon:"🏡",desc:"AIの基本を学ぶ",unlock:1},
@@ -56,11 +57,49 @@ const quests=[
   keywords:["対象","目的","形式","日付","数字","確認","個人情報","機密","人","チェック"],explain:"総合課題では、良いプロンプトだけでなく、事実確認・安全性・人による最終確認まで含めて設計できることが重要です。"}
 ];
 
+function auditQuests(){
+ const errors=[];
+ const ids=new Set();
+ quests.forEach(q=>{
+  if(ids.has(q.id))errors.push(`${q.id}: ID重複`); ids.add(q.id);
+  if(!q.id||!q.area||!q.title||!q.reward||!q.skill||!q.type)errors.push(`${q.id||"UNKNOWN"}: 基本項目不足`);
+  if(q.type==="choice" && (!Array.isArray(q.choices)||typeof q.answer!=="number"||q.answer<0||q.answer>=q.choices.length))errors.push(`${q.id}: choice定義不正`);
+  if(q.type==="multi" && (!Array.isArray(q.choices)||!Array.isArray(q.answers)||q.answers.length===0||q.answers.some(i=>typeof i!=="number"||i<0||i>=q.choices.length)))errors.push(`${q.id}: multi定義不正`);
+  if(["text","master"].includes(q.type) && (!Array.isArray(q.keywords)||q.keywords.length<3))errors.push(`${q.id}: 自由入力キーワード不足`);
+ });
+ if(errors.length)console.error("AI QUEST quest audit errors",errors);
+ return errors;
+}
+auditQuests();
+
 let save=load()||fresh();
 let currentArea=null,currentQuest=null,selected=[],answered=false;
 
 function fresh(){return {name:"AI QUEST冒険者",level:1,exp:0,coins:0,cleared:[],mistakes:[],skills:{basic:0,prompt:0,verify:0,work:0,image:0,safety:0,master:0}}}
-function load(){try{return JSON.parse(localStorage.getItem(SAVE_KEY))}catch(e){return null}}
+function load(){
+ try{
+  const current=localStorage.getItem(SAVE_KEY);
+  if(current){return normalizeSave(JSON.parse(current));}
+  const old=localStorage.getItem(OLD_SAVE_KEY);
+  if(old){
+   const migrated=normalizeSave(JSON.parse(old));
+   localStorage.setItem(SAVE_KEY,JSON.stringify(migrated));
+   return migrated;
+  }
+ }catch(e){}
+ return null;
+}
+function normalizeSave(data){
+ const base=fresh();
+ const out={...base,...data};
+ out.cleared=Array.isArray(data?.cleared)?[...new Set(data.cleared.filter(id=>quests.some(q=>q.id===id)))]:[];
+ out.mistakes=Array.isArray(data?.mistakes)?[...new Set(data.mistakes)]:[];
+ out.skills={...base.skills,...(data?.skills||{})};
+ out.exp=Number.isFinite(data?.exp)?Math.max(0,data.exp):0;
+ out.coins=Number.isFinite(data?.coins)?Math.max(0,data.coins):0;
+ out.level=Number.isFinite(data?.level)?Math.max(1,data.level):1;
+ return out;
+}
 function persist(){localStorage.setItem(SAVE_KEY,JSON.stringify(save));updateTop();document.getElementById("saveHint").textContent="セーブデータがあります。";}
 
 function calcLevel(){
@@ -128,34 +167,50 @@ function startQuest(id){
  show("quest");
 }
 function evaluate(){
- const q=currentQuest;let score=0,good=false;
- if(q.type==="choice") good=selected[0]===q.answer;
- else if(q.type==="multi") good=JSON.stringify([...selected].sort())===JSON.stringify([...q.answers].sort());
- else{
-   const v=(document.getElementById("answerInput")?.value||"").trim();
-   const hits=q.keywords.filter(k=>v.toLowerCase().includes(k.toLowerCase())).length;
-   score=Math.min(100,Math.round((hits/q.keywords.length)*100));
-   const len=v.length;
-   if(len>=35)score=Math.min(100,score+15);
-   good=score>=60;
+ const q=currentQuest;
+ if(!q)return;
+ let score=0,good=false;
+ if(q.type==="choice"){
+  good=(selected.length===1 && selected[0]===q.answer);
+  score=good?100:35;
+ }else if(q.type==="multi"){
+  const actual=[...selected].sort((a,b)=>a-b);
+  const expected=[...q.answers].sort((a,b)=>a-b);
+  good=actual.length===expected.length && actual.every((v,i)=>v===expected[i]);
+  score=good?100:35;
+ }else{
+  const input=document.getElementById("answerInput");
+  const v=(input?.value||"").trim();
+  const normalized=v.toLowerCase();
+  const hits=q.keywords.filter(k=>normalized.includes(k.toLowerCase())).length;
+  score=Math.min(100,Math.round((hits/q.keywords.length)*100));
+  if(v.length>=35)score=Math.min(100,score+15);
+  good=score>=60;
  }
- if(q.type==="choice"||q.type==="multi")score=good?100:35;
  const fb=document.getElementById("feedback");
  fb.className=`feedback ${good?"good":"bad"}`;
- fb.innerHTML=good?`<strong>正解！</strong><br>${q.explain}`:`<strong>もう一度考えてみよう。</strong><br>${q.explain}<br><span class="muted">ヒント：目的・条件・安全性・確認方法を意識してみよう。</span>`;
- if(good){
-   if(!save.cleared.includes(q.id)){
-    save.cleared.push(q.id);save.exp+=q.reward;save.coins+=Math.max(20,Math.round(q.reward/10));
-    save.skills[q.skill]=Math.min(100,(save.skills[q.skill]||0)+Math.max(5,Math.round(q.reward/80)));
-    calcLevel();persist();
-   }
-   answered=true;
-   // 正解した時点でクリアを確定。二段階ボタン操作を廃止して状態反映漏れを防ぐ。
-   renderQuests();
-   showResult(q,score);
- }else{
-   save.mistakes=[...new Set([...save.mistakes,q.id])];persist();
+ fb.innerHTML=good
+  ?`<strong>正解！</strong><br>${q.explain}`
+  :`<strong>もう一度考えてみよう。</strong><br>${q.explain}<br><span class="muted">ヒント：目的・条件・安全性・確認方法を意識してみよう。</span>`;
+ if(!good){
+  save.mistakes=[...new Set([...save.mistakes,q.id])];
+  persist();
+  return;
  }
+ completeQuest(q);
+ showResult(q,score);
+}
+function completeQuest(q){
+ // クリア判定を1か所に集約。すべてのQで同じ保存処理を通す。
+ if(save.cleared.includes(q.id))return;
+ save.cleared.push(q.id);
+ save.exp+=q.reward;
+ save.coins+=Math.max(20,Math.round(q.reward/10));
+ save.skills[q.skill]=Math.min(100,(save.skills[q.skill]||0)+Math.max(5,Math.round(q.reward/80)));
+ calcLevel();
+ persist();
+ // 現在エリアの表示も即時更新
+ if(currentArea)renderQuests();
 }
 function showResult(q,score){
  document.getElementById("resultIcon").textContent="🎉";
