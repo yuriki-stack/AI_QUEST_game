@@ -3,86 +3,83 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI QUEST ～生成AIの世界を冒険しよう～</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;background:#0f172a;color:#eef4ff}button,input,textarea{font:inherit}button{border:0;cursor:pointer}.topbar{height:78px;border-bottom:1px solid #26334f;background:#0b1222;display:flex;align-items:center;justify-content:space-between;padding:0 28px}.logo{font-weight:800;font-size:24px}.stats{display:flex;gap:22px;font-size:16px}.stats b{font-size:18px}.screen{display:none;min-height:calc(100vh - 78px);padding:44px 6vw}.screen.active{display:block}.hero{max-width:900px;margin:20px auto;text-align:center;padding:40px 20px}.cat{font-size:86px}.eyebrow{color:#79a9ff;letter-spacing:.12em;font-weight:800}.hero h1{font-size:clamp(64px,10vw,132px);line-height:.9;margin:25px 0;background:linear-gradient(90deg,#fff,#8bd0ff);color:transparent;background-clip:text}.hero .subtitle{font-size:24px;color:#d8e6ff}.primary,.secondary{padding:16px 28px;border-radius:16px;color:white;margin:8px;font-weight:800}.primary{background:#5d91ff;box-shadow:0 10px 25px #5d91ff33}.secondary{background:#263a5d}.note{color:#8495b7}.panel,.card{max-width:1000px;margin:auto;background:#151f34;border:1px solid #2a3957;border-radius:24px;padding:28px;box-shadow:0 20px 60px #0004}.narrow{max-width:620px}.panel h2{margin-top:0;font-size:34px}.field{display:block;margin:22px 0}.field span{display:block;margin-bottom:8px}.field input,.prompt{width:100%;padding:15px;border-radius:12px;border:1px solid #394b6f;background:#0d1527;color:white}.section-head{max-width:1100px;margin:0 auto 24px;display:flex;justify-content:space-between;align-items:center;gap:20px}.section-head h2{font-size:40px;margin:4px 0}.map-grid{max-width:1100px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.world-card{min-height:170px;text-align:left;padding:20px;border-radius:20px;background:#18243b;color:white;border:1px solid #334668}.world-card.unlocked{background:#172c4e;border-color:#4e7cc5}.world-card:hover{transform:translateY(-2px)}.world-card.locked{opacity:.52;cursor:not-allowed}.world-card .icon{font-size:42px}.world-card h3{margin:12px 0 7px}.status{font-size:13px;color:#a9b9d5}.quest-list{display:grid;gap:14px}.quest-card{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px;border:1px solid #334668;border-radius:16px;background:#111b2e}.quest-card h3{margin:0 0 7px}.quest-card p{margin:4px 0;color:#aebdd6}.choices{display:grid;gap:12px;margin:22px 0}.choice{width:100%;padding:16px;text-align:left;background:#1c2a45;color:#fff;border:1px solid #3a4d72;border-radius:14px}.choice:hover{background:#24385d}.feedback{margin-top:18px;padding:18px;border-radius:16px;background:#172b48;border:1px solid #446b9f}.score-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}.score-item{padding:12px;border-radius:12px;background:#0e182b;border:1px solid #2d3d5d}.prompt{min-height:180px;resize:vertical}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#18243a;border:1px solid #496184;padding:12px 18px;border-radius:14px;display:none;z-index:99}.test-badge{position:fixed;right:10px;bottom:10px;background:#0b1222;color:#9ed0ff;padding:8px;border-radius:8px;font-size:12px;z-index:100}.hidden{display:none!important}@media(max-width:900px){.map-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.topbar{padding:0 14px}.stats{gap:9px;font-size:13px}.screen{padding:24px 14px}.map-grid{grid-template-columns:1fr}.section-head{align-items:flex-start}.quest-card{flex-direction:column;align-items:stretch}.hero h1{font-size:70px}.score-grid{grid-template-columns:1fr}}
-</style>
+<title>AI QUEST ～生成AIの世界を冒険しよう～ v1.1</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="topbar"><div class="logo">🐾 AI QUEST <small style="font-size:12px;color:#7fa5df;margin-left:8px">v0.9.0</small></div><div class="stats"><span>Lv.<b id="level">1</b></span><span>EXP <b id="exp">0</b></span><span>🪙 <b id="coins">0</b></span></div></header>
-<main>
-<section id="title" class="screen active"><div class="hero"><div class="cat">🐱</div><p class="eyebrow">生成AIを遊びながら学ぶ冒険RPG</p><h1>AI QUEST</h1><p class="subtitle">～生成AIの世界を冒険しよう～</p><div><button id="startBtn" class="primary">冒険をはじめる</button><button id="continueBtn" class="secondary">続きから</button></div><p class="note">進行状況はこのブラウザに自動保存されます。<br><b style="color:#8eb9ff">v0.9.0 LEVEL 6画像生成の街</b></p></div></section>
-<section id="profile" class="screen"><div class="panel narrow"><h2>冒険者プロフィール</h2><label class="field"><span>名前</span><input id="playerName" maxlength="12" placeholder="ゆう"></label><button id="profileBtn" class="primary">この名前で冒険する</button></div></section>
-<section id="opening" class="screen"><div class="panel"><div id="dialogue"></div><button id="openingBtn" class="primary">次へ</button></div></section>
-<section id="map" class="screen"><div class="section-head"><div><p class="eyebrow">WORLD MAP</p><h2>AIの世界</h2><p id="mapMessage" class="note"></p></div><button class="secondary" id="titleBtn">タイトルへ</button></div><div id="worldGrid" class="map-grid"></div></section>
-<section id="village" class="screen"><div class="section-head"><div><p class="eyebrow">はじまりの村</p><h2>クエストボード</h2></div><button class="secondary" data-back-map>マップへ</button></div><div id="villageQuestList" class="quest-list"></div></section>
-<section id="forest" class="screen"><div class="section-head"><div><p class="eyebrow">AREA 03</p><h2>プロンプトの森</h2><p>AIに伝わる「お願いの作り方」を実践しよう。</p></div><button class="secondary" data-back-map>マップへ</button></div><div id="forestQuestList" class="quest-list"></div></section>
-<section id="verification" class="screen"><div class="section-head"><div><p class="eyebrow">AREA 04</p><h2>🔎 AI検証の谷</h2><p>AIの回答をそのまま信じず、根拠を確認する力を身につけよう。</p></div><button class="secondary" data-back-map>マップへ</button></div><div id="verificationQuestList" class="quest-list"></div></section>
-<section id="text" class="screen"><div class="section-head"><div><p class="eyebrow">AREA 05</p><h2>🏙️ 文章生成の街</h2><p>要約・メール・アイデア出しを通して、生成AIを「文章作成の相棒」として使ってみよう。</p></div><button class="secondary" data-back-map>マップへ</button></div><div id="textQuestList" class="quest-list"></div></section>
-<section id="image" class="screen"><div class="section-head"><div><p class="eyebrow">AREA 06</p><h2>🎨 画像生成の街</h2><p>「何を・どんな構図で・どんな雰囲気で」を言葉にして、狙った画像を作る指示を学ぼう。</p></div><button class="secondary" data-back-map>マップへ</button></div><div id="imageQuestList" class="quest-list"></div></section>
-<section id="quest" class="screen"><div class="panel"><p id="questArea" class="eyebrow"></p><h2 id="questTitle"></h2><div id="questContent"></div></div></section>
-<section id="result" class="screen"><div class="panel" style="text-align:center"><div style="font-size:64px">✨</div><h2 id="resultTitle">クエストクリア！</h2><div id="resultMessage"></div><div id="reward"></div><button id="resultNext" class="primary">次へ進む</button></div></section>
-</main><div id="toast" class="toast"></div><div id="testBadge" class="test-badge hidden"></div>
-<script>
-(() => {
-'use strict';
-const KEY='aiQuestSave_v06';
-const TH=[0,300,700,1200,1800,2500,3300,4200,5200,6300];
-const AREAS=[
-{id:'village',name:'はじまりの村',icon:'🏡',level:1,ready:true},
-{id:'forest',name:'プロンプトの森',icon:'🌲',level:3,ready:true},
-{id:'verification',name:'AI検証の谷',icon:'🔎',level:4,ready:true},
-{id:'text',name:'文章生成の街',icon:'🏙️',level:5,ready:true},
-{id:'image',name:'画像生成の街',icon:'🎨',level:6,ready:true},
-{id:'guild',name:'AI仕事ギルド',icon:'💼',level:7,ready:false},
-{id:'safety',name:'安全・検証エリア',icon:'🛡️',level:8,ready:false},
-{id:'lab',name:'AI研究所',icon:'🧪',level:9,ready:false},
-{id:'master',name:'AIマスター試験',icon:'👑',level:9,ready:false}];
-const Q=[
-{id:'Q001',area:'village',level:1,title:'AIとの出会い',desc:'AIとは何かを知ろう。',exp:120,coin:30,type:'choice',q:'AIについての説明として最も近いものは？',opts:['人間の知的な作業の一部をコンピュータで扱えるようにする技術','必ず正解を出す魔法の道具','インターネットそのもの'],ans:0,why:'AIは、人間が行ってきた知的な作業の一部をコンピュータで扱えるようにする技術です。'},
-{id:'Q002',area:'village',level:1,title:'AIは何ができる？',desc:'生成AIの特徴を知ろう。',exp:140,coin:35,type:'choice',q:'生成AIの特徴として適切なのは？',opts:['文章・画像などのコンテンツを生成できる','必ず最新情報を知っている','人間の判断が不要になる'],ans:0,why:'生成AIは文章や画像などを生成できます。ただし、最新情報や事実性は確認が必要です。'},
-{id:'Q003',area:'village',level:1,title:'AIの得意・苦手',desc:'AIの回答をそのまま信じない習慣を身につけよう。',exp:160,coin:35,type:'choice',q:'AIの回答を仕事で使うとき、特に重要なのは？',opts:['重要な情報は根拠や一次情報を確認する','AIが答えたら必ず正しいと考える','確認せずそのまま公開する'],ans:0,why:'AIはもっともらしい誤情報を生成することがあります。重要な内容ほど検証しましょう。'},
-{id:'Q004',area:'village',level:2,title:'最初のお願い',desc:'あいまいな依頼を具体的なプロンプトに変えよう。',exp:170,coin:40,type:'choice',q:'「旅行を考えて」より伝わりやすい依頼は？',opts:['東京から日帰りで行ける旅行先を3つ、予算1万円以内で表形式にしてください。','旅行について何か考えて。','いい旅行を考えて。'],ans:0,why:'目的・条件・出力形式を具体化すると、AIが意図を理解しやすくなります。'},
-{id:'Q005',area:'village',level:2,title:'伝わる依頼文',desc:'メール作成に必要な条件を整理しよう。',exp:160,coin:35,type:'choice',q:'AIに仕事メールを書いてもらうとき役立つ情報は？',opts:['相手・目的・要件・トーン・出力形式など','何も条件を伝えない','AIに全部任せるだけ'],ans:0,why:'誰に、何のために、何を伝えるかを明確にすると使いやすい文章になります。'},
-{id:'Q006',area:'village',level:2,title:'村の掲示板を整理せよ',desc:'情報を表形式に整理する練習。',exp:170,coin:40,type:'choice',q:'「項目・担当・期限」の情報を整理するなら？',opts:['表形式','意味のない長文','条件を削除した一文'],ans:0,why:'複数項目を比較・管理する場合は表形式が扱いやすいです。'},
-{id:'Q007',area:'forest',level:3,title:'森への入口',desc:'良いプロンプトの基本要素を見つけよう。',exp:180,coin:45,type:'choice',q:'AIへの指示を強くするために特に役立つ組み合わせは？',opts:['目的・対象・条件・出力形式を具体的にする','とにかく長い文章にする','「いい感じに」だけ伝える'],ans:0,why:'長さそのものではなく、目的・対象・条件・出力形式などの具体性が重要です。'},
-{id:'Q008',area:'forest',level:3,title:'良い指示を探せ',desc:'具体的な指示とあいまいな指示を見分けよう。',exp:200,coin:50,type:'choice',q:'より伝わりやすいプロンプトは？',opts:['高校生向けに、300字以内、箇条書き3点で説明してください。','分かりやすく説明して。'],ans:0,why:'対象・文字数・形式が明確なので、AIが出力を調整しやすくなります。'},
-{id:'Q009',area:'forest',level:3,title:'プロンプト職人への道',desc:'自分でプロンプトを書いて評価しよう。',exp:260,coin:70,type:'prompt',why:'良いプロンプトは、目的・対象・条件・出力形式などが具体的です。'},
-{id:'Q010',area:'verification',level:4,title:'AI探偵の事件簿',desc:'AIの回答をうのみにせず、公式情報で確認しよう。',exp:220,coin:55,type:'choice',q:'AIが「○○市では来月から全員に給付金が配られます」と回答しました。まず何をするべき？',opts:['そのまま友達に共有する','自治体などの公式情報で事実を確認する','AIにもう一度同じ質問をして、同じ答えなら正しいと判断する'],ans:1,why:'重要な事実は自治体・官公庁などの公式情報や一次情報で確認します。'},
-{id:'Q011',area:'verification',level:4,title:'根拠を追え',desc:'AIの回答を確認するとき、出典と根拠を見る習慣を身につけよう。',exp:230,coin:60,type:'choice',q:'AIの回答を確認するとき、特に注意したいものは？',opts:['回答に具体的な出典や根拠があるか','文章が長くて詳しそうに見えるか','自信ありげな言い方をしているか'],ans:0,why:'文章の長さや自信のある表現は正確さを保証しません。出典・根拠・一次情報を確認することが重要です。'},
-{id:'Q012',area:'verification',level:4,title:'答えを検証せよ',desc:'変化する情報は、最新の公式情報で確かめよう。',exp:240,coin:65,type:'choice',q:'AIが会社のサービス料金を回答しました。料金は変わる可能性があります。最も適切な対応は？',opts:['AIの回答をそのまま顧客に伝える','公式サイトなど最新の情報源で料金を確認してから使う','回答が具体的なら確認しなくてよい'],ans:1,why:'料金・営業時間・制度など変化する情報は、最新の公式情報を確認してから利用します。'},
-{id:'Q013',area:'text',level:5,title:'3つの文章を作れ',desc:'文章生成の基本を実践しよう。まずは目的に合う依頼を選ぼう。',exp:220,coin:55,type:'choice',q:'「高校生向けに、生成AIを200字以内で説明する文章」を作ってもらいたい。最も適切な依頼は？',opts:['生成AIについて書いて。','高校生向けに、生成AIとは何かを200字以内で、具体例を1つ入れて説明してください。','すごい文章を書いて。'],ans:1,why:'対象・テーマ・文字数・具体例などを指定すると、目的に合った文章を作りやすくなります。'},
-{id:'Q013A',area:'text',level:5,title:'要約職人への道',desc:'長い文章を短く整理するための指示を考えよう。',exp:220,coin:55,type:'choice',q:'会議メモを「重要点3つ」に整理したい。AIへの依頼として適切なのは？',opts:['この文章をいい感じにして。','会議メモから重要なポイントを3つ抜き出し、各ポイントを1文でまとめてください。','全部そのままコピーして。'],ans:1,why:'何を抜き出すか、いくつにするか、どんな形式にするかを指定すると要約結果を調整しやすくなります。'},
-{id:'Q013B',area:'text',level:5,title:'メール職人への道',desc:'相手と目的を意識して、実際に使えるプロンプトを作ろう。',exp:260,coin:70,type:'prompt',why:'相手・目的・要件・トーン・出力形式を指定すると、実務で使いやすいメールを作りやすくなります。'},
-{id:'Q014',area:'image',level:6,title:'イメージを言葉に',desc:'画像生成AIに伝えるべき要素を整理しよう。',exp:220,coin:55,type:'choice',q:'「夕暮れの海辺で、猫が座っているイラスト」をより具体的にしたい。最初に追加すると効果的な情報は？',opts:['構図・画風・光・色などの具体的な条件','「すごくいい感じに」とだけ書く','何も指定せずAIに全部任せる'],ans:0,why:'被写体だけでなく、構図・画風・光・色などを指定すると、完成イメージをAIに伝えやすくなります。'},
-{id:'Q015',area:'image',level:6,title:'理想の一枚',desc:'実際に画像生成プロンプトを組み立てよう。',exp:260,coin:70,type:'imagePrompt',why:'画像生成では、被写体・構図・スタイル・光や色・画角などを具体的に指定すると、狙ったイメージに近づけやすくなります。'}];
-let s={name:'',exp:0,coins:0,level:1,completed:[],current:null};let current=null;let opening=0;
-const $=id=>document.getElementById(id);
-function calcLevel(){let lv=1;for(let i=1;i<TH.length;i++)if(s.exp>=TH[i])lv=i+1;s.level=lv}
-function save(){localStorage.setItem(KEY,JSON.stringify(s))}
-function load(){try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&typeof r==='object'){s={...s,...r};s.completed=Array.isArray(s.completed)?s.completed:[];s.exp=Number(s.exp)||0;s.coins=Number(s.coins)||0;calcLevel();current=Q.find(x=>x.id===s.current)||null}}catch(e){localStorage.removeItem(KEY)};update()}
-function update(){$('level').textContent=s.level;$('exp').textContent=s.exp;$('coins').textContent=s.coins}
-function screen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');update();if(id==='map')renderMap();if(id==='village')renderList('village',$('villageQuestList'));if(id==='forest')renderList('forest',$('forestQuestList'));if(id==='verification')renderList('verification',$('verificationQuestList'));if(id==='text')renderList('text',$('textQuestList'));if(id==='image')renderList('image',$('imageQuestList'))}
-function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',2200)}
-function newGame(){s={name:'',exp:0,coins:0,level:1,completed:[],current:null};current=null;opening=0;save();screen('profile')}
-function createProfile(){s.name=($('playerName').value||'冒険者').trim()||'冒険者';opening=0;save();renderOpening();screen('opening')}
-function renderOpening(){const a=[['🐱','アイニャ','ここはAIの世界だよ。遊びながらAIへのお願いの仕方を覚えよう！'],['🧑‍🌾','村長','失敗しても大丈夫。答えの理由を確認しながら進めよう。'],['🐱','アイニャ','それじゃあ、最初のクエストへ出発！']][opening];$('dialogue').innerHTML='<h2>'+a[0]+' '+a[1]+'</h2><p style="font-size:20px;line-height:1.9">'+a[2]+'</p><p class="note">'+(opening+1)+'/3</p>'}
-function nextOpening(){if(opening<2){opening++;renderOpening()}else screen('map')}
-function continueGame(){const raw=localStorage.getItem(KEY);if(!raw){toast('セーブデータがありません。先に「冒険をはじめる」を選んでください。');return}load();screen('map')}
-function renderMap(){const g=$('worldGrid');g.innerHTML='';AREAS.forEach(a=>{const b=document.createElement('button');b.className='world-card '+(s.level>=a.level?'unlocked':'locked');b.innerHTML='<div class="icon">'+(s.level>=a.level?a.icon:'🔒')+'</div><h3>'+a.name+'</h3><div class="status">'+(s.level<a.level?'Lv.'+a.level+'で解放':a.ready?'▶ 選択できます':'🔓 解放済み・準備中')+'</div>';if(s.level>=a.level&&a.ready)b.onclick=()=>screen(a.id);else if(s.level<a.level)b.onclick=()=>toast(a.name+'はLv.'+a.level+'で解放されます');else b.onclick=()=>toast(a.name+'は次のアップデートで実装します');g.appendChild(b)});const n=AREAS.find(a=>a.level>s.level);$('mapMessage').textContent=n?'現在 Lv.'+s.level+'｜次はLv.'+n.level+'で「'+n.name+'」が解放されます。':'すべてのエリアが解放されています。'}
-function renderList(area,el){el.innerHTML='';const qs=Q.filter(q=>q.area===area);qs.forEach((q,i)=>{const prev=i===0||s.completed.includes(qs[i-1].id);const can=s.level>=q.level&&prev;const b=document.createElement('div');b.className='quest-card';b.innerHTML='<div><h3>'+(s.completed.includes(q.id)?'✅ ':'')+q.id+' '+q.title+'</h3><p>'+q.desc+'</p><p>報酬：EXP '+q.exp+' / 🪙 '+q.coin+'</p></div>';const btn=document.createElement('button');btn.className=can?'primary':'secondary';btn.textContent=s.completed.includes(q.id)?'もう一度':'開始';btn.disabled=!can;btn.onclick=()=>startQuest(q.id);b.appendChild(btn);el.appendChild(b)})}
-function startQuest(id){const q=Q.find(x=>x.id===id);if(!q)return;if(s.level<q.level){toast('Lv.'+q.level+'で解放されます');return}const qs=Q.filter(x=>x.area===q.area);const i=qs.findIndex(x=>x.id===id);if(i>0&&!s.completed.includes(qs[i-1].id)){toast('前のクエストをクリアしてください');return}current=q;s.current=q.id;save();renderQuest();screen('quest')}
-function renderQuest(){const q=current;$('questArea').textContent=q.area==='forest'?'PROMPT FOREST':q.area==='verification'?'AI VERIFICATION':q.area==='text'?'TEXT CITY':q.area==='image'?'IMAGE CITY':'START VILLAGE';$('questTitle').textContent=q.id+' '+q.title;const c=$('questContent');if(q.type==='choice'){c.innerHTML='<p>'+q.desc+'</p><h3>'+q.q+'</h3><div class="choices">'+q.opts.map((o,i)=>'<button class="choice" data-i="'+i+'">'+o+'</button>').join('')+'</div><p class="note">間違えてもゲームオーバーにはなりません。</p>';c.querySelectorAll('.choice').forEach(b=>b.onclick=()=>answer(Number(b.dataset.i)))}else{const isText=q.area==='text';const isImage=q.area==='image';const theme=isImage?'「夕暮れの海辺にいる猫」の画像生成プロンプトを作ろう。':isText?'「仕事相手へのお礼メール」をAIに作ってもらうプロンプトを作ろう。':'高校生向けに「生成AIとは何か」を説明するプロンプトを作ろう。';const example=isImage?'例：夕暮れの海辺で白い猫が砂浜に座っている、横構図、やわらかなオレンジ色の光、絵本風イラスト、穏やかな雰囲気。':'例：'+(isText?'取引先への打ち合わせのお礼メールを、丁寧で簡潔な文体、200字以内、件名付きで作成してください。':'高校生向けに、生成AIとは何かを200字以内で、具体例を1つ入れて、箇条書き3点で説明してください。');const cards=isImage?'<div class="score-grid"><div class="score-item">🐱 被写体</div><div class="score-item">🖼️ 構図</div><div class="score-item">🎨 スタイル</div><div class="score-item">💡 光・色</div><div class="score-item">📐 画角</div></div>':'<div class="score-grid"><div class="score-item">🎯 目的</div><div class="score-item">👤 対象</div><div class="score-item">📏 条件</div><div class="score-item">📋 出力形式</div></div>';c.innerHTML='<p>'+q.desc+'</p><h3>テーマ：'+theme+'</h3>'+cards+'<textarea id="prompt" class="prompt" placeholder="'+example+'"></textarea><button id="scoreBtn" class="primary">プロンプトを評価する</button><div id="feedback"></div>';$('scoreBtn').onclick=scorePrompt}}
-function answer(i){const q=current;if(i===q.ans){$('questContent').innerHTML='<div class="feedback"><h2>正解！</h2><p>'+q.why+'</p><button id="clearBtn" class="primary">クリアして進む</button></div>';$('clearBtn').onclick=()=>complete()}else toast('もう一度考えてみよう。ヒント：'+q.why)}
-function scorePrompt(){const v=($('prompt').value||'').trim();if(v.length<10){toast('もう少し具体的に書いてみましょう');return}const isImage=current&&current.area==='image';const checks=isImage?[['被写体',20,/猫|犬|人物|人|風景|建物|海|山|料理|商品|動物/.test(v)],['構図',20,/構図|横構図|縦構図|正面|俯瞰|近景|遠景|中央|背景|前景/.test(v)],['スタイル',20,/イラスト|写真|絵本|アニメ|水彩|油彩|リアル|3D|漫画|映画風/.test(v)],['光・色',20,/光|夕暮れ|朝|夜|暖色|寒色|オレンジ|青|明るい|暗い|照明/.test(v)],['具体性',20,v.length>=45]]:[['目的',20,/説明|解説|教え|まとめ|作成|生成|メール|お礼|依頼/.test(v)],['対象',20,/高校生|初心者|子ども|社会人|取引先|上司|相手|向け|対象/.test(v)],['条件',25,/文字|字|以内|具体|例|点|個|丁寧|簡潔|トーン/.test(v)],['出力形式',20,/箇条書き|表|形式|見出し|ステップ|リスト|件名|メール/.test(v)],['具体性',15,v.length>=35]];const score=checks.reduce((a,x)=>a+(x[2]?x[1]:0),0);$('feedback').innerHTML='<div class="feedback"><h2>'+score+'点</h2><p>'+checks.map(x=>(x[2]?'✓ ':'△ ')+x[0]).join('<br>')+'</p>'+(score>=70?'<button id="clearBtn" class="primary">クリアして進む</button>':'<p>不足している要素を追加して再挑戦しましょう。</p>')+'</div>';if(score>=70)$('clearBtn').onclick=()=>complete()}
-function complete(){const q=current;const first=!s.completed.includes(q.id);if(first){s.completed.push(q.id);s.exp+=q.exp;s.coins+=q.coin;const old=s.level;calcLevel();save();$('resultMessage').innerHTML='<p>'+q.title+'をクリア！</p><p>'+q.why+'</p>'+(s.level>old?'<p><b>🎉 Lv.'+s.level+'！新しいエリアが解放されました。</b></p>':'');$('reward').innerHTML='<p>✨ EXP +'+q.exp+'　🪙 +'+q.coin+'</p>'}else{$('resultMessage').innerHTML='<p>'+q.title+'を再クリアしました。報酬は初回のみです。</p>';$('reward').innerHTML=''}screen('result')}
-function nextResult(){screen(current.area==='forest'?'forest':current.area==='verification'?'verification':current.area==='text'?'text':'village')}
-function runSelfTest(){
- const log=[];const ok=(name,cond)=>{log.push((cond?'PASS ':'FAIL ')+name);if(!cond)throw new Error(name)};
- localStorage.removeItem(KEY);newGame();ok('new game -> profile',$('profile').classList.contains('active'));$('playerName').value='テスト';createProfile();ok('profile -> opening',$('opening').classList.contains('active'));for(let i=0;i<3;i++)nextOpening();ok('opening -> map',$('map').classList.contains('active'));ok('village unlocked',document.querySelector('#worldGrid .unlocked'));screen('village');ok('Q001 shown',$('villageQuestList').textContent.includes('Q001'));startQuest('Q001');answer(0);complete();nextResult();for(const id of ['Q002','Q003','Q004','Q005','Q006']){startQuest(id);answer(0);complete();nextResult()}ok('level 3',s.level===3);ok('forest unlocked',AREAS.find(a=>a.id==='forest')&&s.level>=3);renderMap();const cards=[...document.querySelectorAll('#worldGrid .world-card')];ok('forest selectable',cards.some(x=>x.textContent.includes('プロンプトの森')&&x.classList.contains('unlocked')));startQuest('Q007');answer(0);complete();nextResult();startQuest('Q008');answer(0);complete();nextResult();startQuest('Q009');$('prompt').value='高校生向けに生成AIとは何かを200字以内で、具体例を1つ入れて箇条書き3点で説明してください';scorePrompt();complete();ok('Q009 completed',s.completed.includes('Q009'));startQuest('Q010');answer(1);complete();nextResult();startQuest('Q011');answer(0);complete();nextResult();ok('level 5',s.level===5);renderMap();ok('text city selectable',AREAS.find(a=>a.id==='text').ready&&s.level>=5);startQuest('Q013');answer(1);complete();nextResult();startQuest('Q013A');answer(1);complete();nextResult();startQuest('Q013B');$('prompt').value='取引先への打ち合わせのお礼メールを、丁寧で簡潔な文体、200字以内、件名付きで作成してください';scorePrompt();complete();ok('level 6',s.level===6);ok('text quests completed',s.completed.includes('Q013B'));renderMap();ok('image city selectable',AREAS.find(a=>a.id==='image').ready&&s.level>=6);startQuest('Q014');answer(0);complete();nextResult();startQuest('Q015');$('prompt').value='夕暮れの海辺で白い猫が砂浜に座っている、横構図、絵本風イラスト、やわらかなオレンジ色の光、穏やかな雰囲気';scorePrompt();complete();ok('level 7',s.level===7);ok('image quests completed',s.completed.includes('Q015'));localStorage.removeItem(KEY);$('testBadge').textContent='SELF TEST: PASS';$('testBadge').classList.remove('hidden');return log.join('\n')}
-$('startBtn').onclick=newGame;$('continueBtn').onclick=continueGame;$('profileBtn').onclick=createProfile;$('openingBtn').onclick=nextOpening;$('titleBtn').onclick=()=>screen('title');$('resultNext').onclick=nextResult;document.querySelectorAll('[data-back-map]').forEach(b=>b.onclick=()=>screen('map'));load();
-if(new URLSearchParams(location.search).get('test')==='1'){setTimeout(()=>{try{const result=runSelfTest();document.body.dataset.selftest=result}catch(e){document.body.dataset.selftest='FAIL '+e.message;$('testBadge').textContent='SELF TEST: FAIL '+e.message;$('testBadge').classList.remove('hidden')}} ,50)}
-window.AIQUEST={state:()=>({...s}),screen,runSelfTest};
-})();
-</script>
-</body></html>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">🤖 AI QUEST</div>
+    <div class="status">
+      <span id="level">Lv.1</span><span id="exp">EXP 0</span><span id="coins">🪙 0</span>
+    </div>
+  </header>
+
+  <main>
+    <section id="home" class="screen active">
+      <div class="hero">
+        <div class="hero-icon">🐱</div>
+        <p class="eyebrow">GENERATIVE AI ADVENTURE</p>
+        <h1>AI QUEST</h1>
+        <p>遊びながら、生成AIを「使える力」に変えていこう。</p>
+        <div class="buttons">
+          <button id="continueBtn" class="primary">続きから</button>
+          <button id="startBtn">最初から</button>
+        </div>
+        <p id="saveHint" class="muted"></p>
+      </div>
+    </section>
+
+    <section id="map" class="screen">
+      <div class="section-head"><div><p class="eyebrow">WORLD MAP</p><h2>AI世界マップ</h2></div><button data-screen="home" class="ghost">タイトルへ</button></div>
+      <div id="mapGrid" class="map-grid"></div>
+    </section>
+
+    <section id="quests" class="screen">
+      <div class="section-head"><div><p class="eyebrow">QUEST BOARD</p><h2 id="areaTitle">クエスト</h2></div><button data-screen="map" class="ghost">マップへ</button></div>
+      <div id="questList"></div>
+    </section>
+
+    <section id="quest" class="screen">
+      <div class="quest-shell">
+        <div class="quest-meta"><span id="questTag"></span><span id="questReward"></span></div>
+        <h2 id="questTitle"></h2>
+        <p id="questIntro"></p>
+        <div id="questBody"></div>
+        <div id="feedback" class="feedback hidden"></div>
+        <div class="quest-actions">
+          <button id="backQuest" class="ghost">クエスト一覧</button>
+          <button id="checkBtn" class="primary">回答を確認</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="result" class="screen">
+      <div class="result-card">
+        <div id="resultIcon" class="result-icon">🎉</div>
+        <p class="eyebrow">QUEST RESULT</p>
+        <h2 id="resultTitle"></h2>
+        <p id="resultText"></p>
+        <div id="resultStats" class="stats"></div>
+        <button id="resultNext" class="primary">次へ</button>
+      </div>
+    </section>
+
+    <section id="profile" class="screen">
+      <div class="section-head"><div><p class="eyebrow">PROFILE</p><h2>冒険者プロフィール</h2></div><button data-screen="map" class="ghost">戻る</button></div>
+      <div class="profile-card">
+        <div class="avatar">🐱</div><div><h3 id="profileName">AI QUEST冒険者</h3><p id="profileLevel"></p></div>
+      </div>
+      <div id="skills" class="skills"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button data-screen="map">🗺️<span>マップ</span></button>
+    <button data-screen="profile">📖<span>プロフィール</span></button>
+    <button id="saveBtn">💾<span>保存</span></button>
+  </nav>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
