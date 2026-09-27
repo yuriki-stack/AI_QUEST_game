@@ -1,6 +1,5 @@
-// AI QUEST v1.2.1 - forced fresh JS filename to avoid browser cache
-const SAVE_KEY="AI_QUEST_V1_2_1_SAVE";
-const LEGACY_KEYS=["AI_QUEST_V1_2_SAVE","AI_QUEST_V1_1_SAVE"];
+const SAVE_KEY="AI_QUEST_V1_2_2_SAVE";
+const OLD_SAVE_KEY="AI_QUEST_V1_2_SAVE";
 
 const areas=[
  {id:"village",name:"はじまりの村",icon:"🏡",desc:"AIの基本を学ぶ",unlock:1},
@@ -80,17 +79,22 @@ function fresh(){return {name:"AI QUEST冒険者",level:1,exp:0,coins:0,cleared:
 function load(){
  try{
   const current=localStorage.getItem(SAVE_KEY);
-  if(current) return normalizeSave(JSON.parse(current));
-  for(const key of LEGACY_KEYS){
-   const raw=localStorage.getItem(key);
-   if(raw){ const migrated=normalizeSave(JSON.parse(raw)); localStorage.setItem(SAVE_KEY,JSON.stringify(migrated)); return migrated; }
+  if(current){return normalizeSave(JSON.parse(current));}
+  const oldKeys=[OLD_SAVE_KEY,"AI_QUEST_V1_1_SAVE"];
+  for(const key of oldKeys){
+   const old=localStorage.getItem(key);
+   if(old){
+    const migrated=normalizeSave(JSON.parse(old));
+    localStorage.setItem(SAVE_KEY,JSON.stringify(migrated));
+    return migrated;
+   }
   }
  }catch(e){}
  return null;
 }
 function normalizeSave(data){
  const base=fresh();
- const out={...base,...(data||{})};
+ const out={...base,...data};
  out.cleared=Array.isArray(data?.cleared)?[...new Set(data.cleared.filter(id=>quests.some(q=>q.id===id)))]:[];
  out.mistakes=Array.isArray(data?.mistakes)?[...new Set(data.mistakes)]:[];
  out.skills={...base.skills,...(data?.skills||{})};
@@ -99,7 +103,6 @@ function normalizeSave(data){
  out.level=Number.isFinite(data?.level)?Math.max(1,data.level):1;
  return out;
 }
-
 function persist(){localStorage.setItem(SAVE_KEY,JSON.stringify(save));updateTop();document.getElementById("saveHint").textContent="セーブデータがあります。";}
 
 function calcLevel(){
@@ -113,15 +116,15 @@ function updateTop(){document.getElementById("level").textContent=`Lv.${save.lev
 function show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");updateTop();window.scrollTo({top:0,behavior:"smooth"})}
 
 function isAreaUnlocked(a){
+ // レベル条件に加えて、直前エリアをすべてクリアしていれば次エリアを解放する。
+ // これにより「前エリアを全部クリアしたのに、EXP不足で進めない」状態を防ぐ。
  if(a.id==="village") return true;
  if(save.level>=a.unlock) return true;
  const idx=areas.findIndex(x=>x.id===a.id);
  if(idx<=0) return true;
- const previous=areas[idx-1];
- // 前エリアの「通常クエスト」をすべてCLEARしていれば、レベル不足でも解放
- return areaCleared(previous);
+ return areaCleared(areas[idx-1]);
 }
-function areaCleared(a){const qs=quests.filter(q=>q.area===a.id); return qs.length>0 && qs.every(q=>save.cleared.includes(q.id))}
+function areaCleared(a){return quests.filter(q=>q.area===a.id&&!q.id.endsWith("A")).every(q=>save.cleared.includes(q.id))}
 function questState(q){
  if(save.cleared.includes(q.id)) return "clear";
  const prev=quests.filter(x=>x.area===q.area&&!x.id.endsWith("A")).filter(x=>x.id!==q.id);
@@ -151,7 +154,7 @@ function renderQuests(){
  const qs=quests.filter(q=>q.area===currentArea);
  document.getElementById("questList").innerHTML=qs.map(q=>{
   const st=questState(q), label=st==="clear"?"CLEAR":st==="available"?"挑戦可能":"LOCKED";
-  const buttonText = st==="clear" ? "もう一度" : st==="available" ? "開始" : "ロック中";
+  const buttonText = st==="clear" ? "もう一度" : st==="available" ? "開始" : "開始";
   const buttonDisabled = st==="locked" ? "disabled" : "";
   return `<div class="quest-card"><div class="qicon">${st==="clear"?"✅":st==="locked"?"🔒":"📜"}</div><div class="qmain"><span class="badge ${st}">${label}</span><h3>${q.id}｜${q.title}</h3><p>Lv.${q.lv} ・ ${q.desc} ・ EXP ${q.reward}</p></div><button ${buttonDisabled} data-q="${q.id}">${buttonText}</button></div>`}).join("");
  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>startQuest(b.dataset.q));
@@ -249,7 +252,5 @@ document.getElementById("saveBtn").onclick=()=>{persist();alert("セーブしま
 document.getElementById("backQuest").onclick=()=>{renderQuests();show("quests")};
 document.getElementById("checkBtn").onclick=evaluate;
 document.querySelectorAll("[data-screen]").forEach(b=>b.onclick=()=>{const id=b.dataset.screen;if(id==="map")renderMap();if(id==="profile")renderProfile();show(id)});
-calcLevel();
-persist();
 updateTop();
 document.getElementById("saveHint").textContent=save.cleared.length?"セーブデータがあります。":"新しい冒険を始めよう。";
